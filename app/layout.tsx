@@ -13,8 +13,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Bias Detector",
-  description: "AI-powered job description analyzer that flags biased and exclusionary language",
+  title: "Meme Maker AI",
+  description: "Type anything, get a meme. AI-powered meme generator.",
 };
 
 export default function RootLayout({

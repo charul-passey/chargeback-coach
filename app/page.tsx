@@ -1,197 +1,112 @@
 "use client";
-
 import { useState } from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { Separator } from "@/components/ui/separator";
 
-const SAMPLE_JD = `We're looking for a rockstar developer who is a digital native. Must have 5+ years experience (recent grads encouraged to apply). Looking for an aggressive self-starter who can hit the ground running. Native English speaker required. Must be able to work long hours when needed. Ideal candidate will have a degree from a top-tier university. Join our young and energetic team!`;
-
-type Severity = "high" | "medium" | "low";
-
-interface Issue {
-  phrase: string;
-  category: string;
-  severity: Severity;
-  explanation: string;
-  rewrite: string;
-}
-
-interface AnalysisResult {
-  overallScore: number;
-  summary: string;
-  issues: Issue[];
-  positives: string[];
-  topRecommendations: string[];
-}
-
-const severityColor: Record<Severity, string> = {
-  high: "bg-red-100 text-red-800 border-red-200",
-  medium: "bg-yellow-100 text-yellow-800 border-yellow-200",
-  low: "bg-blue-100 text-blue-800 border-blue-200",
-};
-
-function scoreLabel(score: number) {
-  if (score >= 90) return { label: "Inclusive", color: "bg-green-100 text-green-800" };
-  if (score >= 75) return { label: "Good", color: "bg-blue-100 text-blue-800" };
-  if (score >= 50) return { label: "Needs Work", color: "bg-yellow-100 text-yellow-800" };
-  return { label: "High Bias Risk", color: "bg-red-100 text-red-800" };
-}
-
-export default function Home() {
-  const [jobDescription, setJobDescription] = useState("");
-  const [result, setResult] = useState<AnalysisResult | null>(null);
+export default function MemeMaker() {
+  const [topic, setTopic] = useState("");
   const [loading, setLoading] = useState(false);
+  const [result, setResult] = useState<{ url: string; template: string; texts: string[]; explanation: string } | null>(null);
   const [error, setError] = useState("");
+  const [history, setHistory] = useState<typeof result[]>([]);
 
-  async function analyze() {
+  const examples = ["mondays", "debugging at 2am", "AI taking my job", "eating salad when you wanted pizza", "git push to main", "when the tests pass on first try"];
+
+  async function generate(t = topic) {
+    if (!t.trim()) return;
     setLoading(true);
     setError("");
     setResult(null);
     try {
-      const res = await fetch("/api/analyze", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ jobDescription }),
-      });
-      if (!res.ok) throw new Error("Analysis failed");
+      const res = await fetch("/api/meme", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ topic: t }) });
       const data = await res.json();
+      if (data.error) throw new Error(data.error);
       setResult(data);
-    } catch {
-      setError("Something went wrong. Please check your API key and try again.");
+      setHistory(prev => [data, ...prev].slice(0, 6));
+    } catch (e) {
+      setError(String(e));
     } finally {
       setLoading(false);
     }
   }
 
-  const { label: scoreText, color: scoreColor } = result ? scoreLabel(result.overallScore) : { label: "", color: "" };
-
   return (
-    <div className="min-h-screen bg-gray-50">
-      <div className="max-w-6xl mx-auto px-4 py-10">
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900">Job Listing Bias Detector</h1>
-          <p className="text-gray-500 mt-1">Identify language that may discourage qualified candidates from applying</p>
+    <main className="min-h-screen bg-gradient-to-br from-yellow-50 via-orange-50 to-pink-50 p-6">
+      <div className="max-w-2xl mx-auto">
+        <div className="text-center mb-8">
+          <div className="text-5xl mb-3">😂</div>
+          <h1 className="text-4xl font-black text-gray-900 mb-2">Meme Maker AI</h1>
+          <p className="text-gray-500">Type anything. Get a meme. It&apos;s that simple.</p>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-          <div className="space-y-4">
-            <Card>
-              <CardContent className="pt-6 space-y-4">
-                <div className="flex items-center justify-between">
-                  <label className="text-sm font-medium text-gray-700">Job Description</label>
-                  <button
-                    className="text-xs text-blue-600 hover:underline"
-                    onClick={() => setJobDescription(SAMPLE_JD)}
-                  >
-                    Try an example
-                  </button>
-                </div>
-                <textarea
-                  className="w-full h-64 p-3 border rounded-md text-sm resize-none focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  placeholder="Paste your job description here..."
-                  value={jobDescription}
-                  onChange={(e) => setJobDescription(e.target.value)}
-                />
-                <div className="flex items-center justify-between">
-                  <span className="text-xs text-gray-400">{jobDescription.length} characters</span>
-                  <Button onClick={analyze} disabled={!jobDescription.trim() || loading}>
-                    {loading ? "Analyzing..." : "Analyze for Bias"}
-                  </Button>
-                </div>
-                {error && <p className="text-sm text-red-600">{error}</p>}
-              </CardContent>
-            </Card>
+        <div className="bg-white rounded-2xl shadow-lg p-6 mb-6">
+          <div className="flex gap-3 mb-4">
+            <input
+              className="flex-1 border-2 border-gray-200 rounded-xl px-4 py-3 text-lg focus:outline-none focus:border-orange-400 transition-colors"
+              placeholder="What should the meme be about?"
+              value={topic}
+              onChange={e => setTopic(e.target.value)}
+              onKeyDown={e => e.key === "Enter" && generate()}
+            />
+            <button
+              onClick={() => generate()}
+              disabled={loading || !topic.trim()}
+              className="bg-orange-500 hover:bg-orange-600 disabled:bg-gray-200 text-white font-bold px-6 py-3 rounded-xl transition-colors"
+            >
+              {loading ? "..." : "Make it"}
+            </button>
           </div>
-
-          <div className="space-y-4">
-            {!result && !loading && (
-              <div className="flex items-center justify-center h-64 text-gray-400 text-sm">
-                Results will appear here after analysis
-              </div>
-            )}
-            {loading && (
-              <div className="flex items-center justify-center h-64 text-gray-400 text-sm">
-                Analyzing for bias patterns...
-              </div>
-            )}
-            {result && (
-              <>
-                <Card>
-                  <CardContent className="pt-6">
-                    <div className="flex items-center gap-4">
-                      <div className="text-5xl font-bold text-gray-900">{result.overallScore}</div>
-                      <div>
-                        <Badge className={scoreColor}>{scoreText}</Badge>
-                        <p className="text-sm text-gray-600 mt-2">{result.summary}</p>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-
-                {result.issues.length > 0 && (
-                  <Card>
-                    <CardHeader>
-                      <CardTitle className="text-base">Flagged Language ({result.issues.length})</CardTitle>
-                    </CardHeader>
-                    <CardContent className="space-y-4">
-                      {result.issues.map((issue, i) => (
-                        <div key={i} className="space-y-1">
-                          <div className="flex items-center gap-2 flex-wrap">
-                            <span className={`text-xs px-2 py-0.5 rounded border font-medium ${severityColor[issue.severity]}`}>
-                              {issue.severity}
-                            </span>
-                            <Badge variant="outline" className="text-xs">{issue.category}</Badge>
-                            <span className="text-sm font-medium text-gray-900">"{issue.phrase}"</span>
-                          </div>
-                          <p className="text-xs text-gray-600">{issue.explanation}</p>
-                          <p className="text-xs text-green-700 bg-green-50 rounded px-2 py-1">
-                            Rewrite: {issue.rewrite}
-                          </p>
-                          {i < result.issues.length - 1 && <Separator className="mt-3" />}
-                        </div>
-                      ))}
-                    </CardContent>
-                  </Card>
-                )}
-
-                {result.positives.length > 0 && (
-                  <Card>
-                    <CardHeader>
-                      <CardTitle className="text-base">What Works Well</CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                      <ul className="space-y-1">
-                        {result.positives.map((p, i) => (
-                          <li key={i} className="text-sm text-gray-700 flex gap-2">
-                            <span className="text-green-500">✓</span> {p}
-                          </li>
-                        ))}
-                      </ul>
-                    </CardContent>
-                  </Card>
-                )}
-
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="text-base">Top Recommendations</CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <ol className="space-y-2">
-                      {result.topRecommendations.map((r, i) => (
-                        <li key={i} className="text-sm text-gray-700 flex gap-2">
-                          <span className="font-bold text-blue-600 shrink-0">{i + 1}.</span> {r}
-                        </li>
-                      ))}
-                    </ol>
-                  </CardContent>
-                </Card>
-              </>
-            )}
+          <div className="flex flex-wrap gap-2">
+            {examples.map(ex => (
+              <button key={ex} onClick={() => { setTopic(ex); generate(ex); }}
+                className="text-sm bg-orange-50 hover:bg-orange-100 text-orange-700 px-3 py-1.5 rounded-full transition-colors border border-orange-200">
+                {ex}
+              </button>
+            ))}
           </div>
         </div>
+
+        {error && <div className="bg-red-50 border border-red-200 text-red-700 rounded-xl p-4 mb-6">{error}</div>}
+
+        {loading && (
+          <div className="bg-white rounded-2xl shadow-lg p-12 mb-6 text-center">
+            <div className="text-4xl mb-3 animate-bounce">🧠</div>
+            <p className="text-gray-500">AI is cooking up something spicy...</p>
+          </div>
+        )}
+
+        {result && (
+          <div className="bg-white rounded-2xl shadow-lg overflow-hidden mb-6">
+            <img src={result.url} alt="Generated meme" className="w-full" />
+            <div className="p-5">
+              <div className="flex items-center gap-2 mb-2">
+                <span className="text-xs font-semibold bg-orange-100 text-orange-700 px-2 py-1 rounded-full">{result.template}</span>
+              </div>
+              <p className="text-gray-600 text-sm italic">&quot;{result.explanation}&quot;</p>
+              <div className="mt-4 flex gap-3">
+                <a href={result.url} target="_blank" rel="noreferrer"
+                  className="flex-1 text-center bg-orange-500 hover:bg-orange-600 text-white font-semibold py-2 rounded-lg transition-colors text-sm">
+                  Open full size
+                </a>
+                <button onClick={() => generate()}
+                  className="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-700 font-semibold py-2 rounded-lg transition-colors text-sm">
+                  Try again
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {history.length > 1 && (
+          <div>
+            <h2 className="font-bold text-gray-600 mb-3 text-sm uppercase tracking-wide">Recent</h2>
+            <div className="grid grid-cols-3 gap-3">
+              {history.slice(1).map((h, i) => h && (
+                <img key={i} src={h.url} alt="meme" className="rounded-xl w-full cursor-pointer hover:opacity-80 transition-opacity shadow"
+                  onClick={() => setResult(h)} />
+              ))}
+            </div>
+          </div>
+        )}
       </div>
-    </div>
+    </main>
   );
 }
