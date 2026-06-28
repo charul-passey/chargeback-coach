@@ -13,8 +13,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Meme Maker AI",
-  description: "Type anything, get a meme. AI-powered meme generator.",
+  title: "Chargeback Coach",
+  description: "Win your next dispute — the right reason code and evidence, fast",
 };
 
 export default function RootLayout({
